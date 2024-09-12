@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login e Pedidos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .login-container, .pedido-container {
+            display: none;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .logout-button {
+            padding: 10px 20px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .logout-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container" class="container login-container">
+        <h1>Login</h1>
+        <form id="login-form">
+            <input type="text" id="email" placeholder="Email" required>
+            <input type="password" id="senha" placeholder="Senha" required>
+            <button type="submit" class="button">Entrar</button>
+        </form>
+        <div id="login-error" style="color: red; margin-top: 10px;"></div>
+    </div>
+
+    <div id="pedido-container" class="container pedido-container">
+        <button class="logout-button" onclick="logout()">Logout</button>
+        <h1>Pedidos e Itens de Pedidos</h1>
+        <div id="pedidos"></div>
+        <div id="itens-pedidos"></div>
+    </div>
+
+    <script>
+        // Função para exibir a tela de login
+        function showLogin() {
+            document.getElementById('login-container').style.display = 'block';
+            document.getElementById('pedido-container').style.display = 'none';
+        }
+
+        // Função para exibir a tela de pedidos
+        function showPedidos() {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('pedido-container').style.display = 'block';
+            loadPedidos(); // Carregar pedidos ao exibir a tela
+        }
+
+        // Função de login
+        document.getElementById('login-form')?.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+
+            const cliente = clientes.find(c => c.email === email && atob(c.senhaHash) === senha);
+
+            if (cliente) {
+                localStorage.setItem('currentClienteId', cliente.id);
+                showPedidos();
+            } else {
+                document.getElementById('login-error').innerText = 'Email ou senha incorretos.';
+            }
+        });
+
+        // Função de logout
+        function logout() {
+            localStorage.removeItem('currentClienteId');
+            showLogin();
+        }
+
+        // Função para carregar pedidos e itens de pedidos
+        function loadPedidos() {
+            const clienteId = localStorage.getItem('currentClienteId');
+            if (!clienteId) {
+                showLogin();
+                return;
+            }
+
+            const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            const itensPedidos = JSON.parse(localStorage.getItem('itens_pedidos')) || [];
+            const produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+
+            const cliente = clientes.find(c => c.id == clienteId);
+            if (!cliente) {
+                document.getElementById('pedidos').innerHTML = '<p>Cliente não encontrado.</p>';
+                return;
+            }
+
+            const clientePedidos = pedidos.filter(p => p.idCliente == clienteId);
+            const clienteItensPedidos = itensPedidos.filter(i => clientePedidos.some(p => p.id == i.idPedido));
+
+            const pedidosHtml = clientePedidos.length > 0
+                ? `<h2>Pedidos</h2>
+                   <table>
+                     <tr>
+                       <th>ID</th>
+                       <th>Data</th>
+                     </tr>
+                     ${clientePedidos.map(p => `
+                       <tr>
+                         <td>${p.id}</td>
+                         <td>${p.data}</td>
+                       </tr>`).join('')}
+                   </table>`
+                : '<p>Não há pedidos para este cliente.</p>';
+
+            const itensPedidosHtml = clienteItensPedidos.length > 0
+                ? `<h2>Itens de Pedidos</h2>
+                   <table>
+                     <tr>
+                       <th>ID do Pedido</th>
+                       <th>Descrição do Produto</th>
+                       <th>Quantidade</th>
+                       <th>Preço Unitário</th>
+                     </tr>
+                     ${clienteItensPedidos.map(i => {
+                         const produto = produtos.find(p => p.id == i.idProduto) || {};
+                         return `
+                           <tr>
+                             <td>${i.idPedido}</td>
+                             <td>${produto.descricao || 'Desconhecido'}</td>
+                             <td>${i.quantidade}</td>
+                             <td>${i.precoUnitario.toFixed(2)}</td>
+                           </tr>`;
+                     }).join('')}
+                   </table>`
+                : '<p>Não há itens de pedidos para este cliente.</p>';
+
+            document.getElementById('pedidos').innerHTML = pedidosHtml;
+            document.getElementById('itens-pedidos').innerHTML = itensPedidosHtml;
+        }
+
+        // Inicialização
+        if (localStorage.getItem('currentClienteId')) {
+            showPedidos();
+        } else {
+            showLogin();
+        }
+    </script>
+</body>
+</html>

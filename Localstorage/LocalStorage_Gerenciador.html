@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #444;
+            flex-wrap: wrap;
+        }
+        nav button {
+            background-color: #555;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        nav button:hover {
+            background-color: #666;
+        }
+        section {
+            margin: 20px;
+        }
+        section h2 {
+            text-align: center;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        form input, form select {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        form button {
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        form button:hover {
+            background-color: #444;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #333;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        .data-viewer {
+            background-color: #fff;
+            padding: 20px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            max-width: 800px;
+            overflow-x: auto;
+        }
+        .data-viewer pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sistema de Gestão - Clientes, Produtos, Pedidos e Itens</h1>
+    </header>
+    <nav>
+        <button onclick="exibirSecao('clientes')">Clientes</button>
+        <button onclick="exibirSecao('produtos')">Produtos</button>
+        <button onclick="exibirSecao('pedidos')">Pedidos</button>
+        <button onclick="exibirSecao('itens_pedidos')">Itens de Pedidos</button>
+        <button onclick="gerarBackup()">Gerar Backup</button>
+        <button onclick="visualizarDados()">Visualizar Dados</button>
+        <button onclick="resetarLocalStorage()">Resetar LocalStorage</button>
+        <input type="file" id="restaurarBackupInput" style="display:none;" onchange="restaurarBackup(event)">
+        <button onclick="document.getElementById('restaurarBackupInput').click()">Restaurar Backup</button>
+    </nav>
+
+    <section id="clientes" style="display:none;">
+        <h2>Cadastro de Clientes</h2>
+        <form onsubmit="adicionarCliente(event)">
+            <input type="text" id="nomeCliente" placeholder="Nome do Cliente" required>
+            <input type="email" id="emailCliente" placeholder="Email do Cliente" required>
+            <input type="password" id="senhaCliente" placeholder="Senha do Cliente" required>
+            <button type="submit">Adicionar Cliente</button>
+        </form>
+        <table id="tabelaClientes">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Senha (Hash)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section id="produtos" style="display:none;">
+        <h2>Cadastro de Produtos</h2>
+        <form onsubmit="adicionarProduto(event)">
+            <input type="text" id="descricaoProduto" placeholder="Descrição do Produto" required>
+            <input type="number" step="0.01" id="precoProduto" placeholder="Preço do Produto" required>
+            <button type="submit">Adicionar Produto</button>
+        </form>
+        <table id="tabelaProdutos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section id="pedidos" style="display:none;">
+        <h2>Cadastro de Pedidos</h2>
+        <form onsubmit="adicionarPedido(event)">
+            <input type="date" id="dataPedido" required>
+            <select id="clientePedido" required>
+                <option value="">Selecione um Cliente</option>
+            </select>
+            <button type="submit">Adicionar Pedido</button>
+        </form>
+        <table id="tabelaPedidos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section id="itens_pedidos" style="display:none;">
+        <h2>Cadastro de Itens de Pedidos</h2>
+        <form onsubmit="adicionarItemPedido(event)">
+            <select id="pedidoItem" required>
+                <option value="">Selecione um Pedido</option>
+            </select>
+            <select id="produtoItem" required onchange="preencherPrecoUnitario()">
+                <option value="">Selecione um Produto</option>
+            </select>
+            <input type="number" step="1" id="quantidadeItem" placeholder="Quantidade" required>
+            <input type="number" step="0.01" id="precoUnitarioItem" placeholder="Preço Unitário" required>
+            <button type="submit">Adicionar Item</button>
+        </form>
+        <table id="tabelaItensPedidos">
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>ID Produto</th>
+                    <th>Quantidade</th>
+                    <th>Preço Unitário</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+    <section id="visualizar_dados" style="display:none;">
+        <h2>Dados do LocalStorage</h2>
+        <div class="data-viewer">
+            <pre id="dadosLocalStorage"></pre>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', carregarDados);
+
+        function exibirSecao(secao) {
+            document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+            document.getElementById(secao).style.display = 'block';
+        }
+
+        function carregarDados() {
+            atualizarTabelaClientes();
+            atualizarTabelaProdutos();
+            atualizarTabelaPedidos();
+            atualizarTabelaItensPedidos();
+            preencherSelectClientes();
+            preencherSelectPedidos();
+            preencherSelectProdutos();
+        }
+
+        // Funções para Clientes
+        function hashSenha(senha) {
+            // Implementação simples de hashing; substitua por uma função de hashing mais segura se necessário
+            return btoa(senha);
+        }
+
+        function adicionarCliente(event) {
+            event.preventDefault();
+            let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+            let novoCliente = {
+                id: clientes.length + 1,
+                nome: document.getElementById('nomeCliente').value,
+                email: document.getElementById('emailCliente').value,
+                senhaHash: hashSenha(document.getElementById('senhaCliente').value)
+            };
+            clientes.push(novoCliente);
+            localStorage.setItem('clientes', JSON.stringify(clientes));
+            atualizarTabelaClientes();
+            preencherSelectClientes();
+            event.target.reset();
+        }
+
+        function atualizarTabelaClientes() {
+            let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+            let tbody = document.querySelector('#tabelaClientes tbody');
+            tbody.innerHTML = '';
+            clientes.forEach(cliente => {
+                let row = `<tr><td>${cliente.id}</td><td>${cliente.nome}</td><td>${cliente.email}</td><td>${cliente.senhaHash}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function preencherSelectClientes() {
+            let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+            let select = document.getElementById('clientePedido');
+            select.innerHTML = '<option value="">Selecione um Cliente</option>';
+            clientes.forEach(cliente => {
+                let option = `<option value="${cliente.id}">${cliente.nome}</option>`;
+                select.innerHTML += option;
+            });
+        }
+
+        // Funções para Produtos
+        function adicionarProduto(event) {
+            event.preventDefault();
+            let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+            let novoProduto = {
+                id: produtos.length + 1,
+                descricao: document.getElementById('descricaoProduto').value,
+                preco: parseFloat(document.getElementById('precoProduto').value)
+            };
+            produtos.push(novoProduto);
+            localStorage.setItem('produtos', JSON.stringify(produtos));
+            atualizarTabelaProdutos();
+            preencherSelectProdutos();
+            event.target.reset();
+        }
+
+        function atualizarTabelaProdutos() {
+            let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+            let tbody = document.querySelector('#tabelaProdutos tbody');
+            tbody.innerHTML = '';
+            produtos.forEach(produto => {
+                let row = `<tr><td>${produto.id}</td><td>${produto.descricao}</td><td>${produto.preco.toFixed(2)}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function preencherSelectProdutos() {
+            let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+            let select = document.getElementById('produtoItem');
+            select.innerHTML = '<option value="">Selecione um Produto</option>';
+            produtos.forEach(produto => {
+                let option = `<option value="${produto.id}" data-preco="${produto.preco}">${produto.descricao}</option>`;
+                select.innerHTML += option;
+            });
+        }
+
+        // Funções para Pedidos
+        function adicionarPedido(event) {
+            event.preventDefault();
+            let pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            let novoPedido = {
+                id: pedidos.length + 1,
+                data: document.getElementById('dataPedido').value,
+                idCliente: document.getElementById('clientePedido').value
+            };
+            pedidos.push(novoPedido);
+            localStorage.setItem('pedidos', JSON.stringify(pedidos));
+            atualizarTabelaPedidos();
+            preencherSelectPedidos();
+            event.target.reset();
+        }
+
+		function atualizarTabelaPedidos() {
+			let pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+			let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+			let tbody = document.querySelector('#tabelaPedidos tbody');
+			tbody.innerHTML = '';
+
+			pedidos.forEach(pedido => {
+				// Converter o idCliente para número antes da comparação
+				let cliente = clientes.find(c => c.id === Number(pedido.idCliente));
+				let nomeCliente = cliente ? cliente.nome : 'Desconhecido';
+				
+				let row = `<tr>
+								<td>${pedido.id}</td>
+								<td>${pedido.data}</td>
+								<td>${nomeCliente}</td>
+						   </tr>`;
+				tbody.innerHTML += row;
+			});
+		}
+
+
+        function preencherSelectPedidos() {
+            let pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            let select = document.getElementById('pedidoItem');
+            select.innerHTML = '<option value="">Selecione um Pedido</option>';
+            pedidos.forEach(pedido => {
+                let option = `<option value="${pedido.id}">Pedido ${pedido.id}</option>`;
+                select.innerHTML += option;
+            });
+        }
+
+        // Funções para Itens de Pedidos
+        function preencherPrecoUnitario() {
+            let select = document.getElementById('produtoItem');
+            let precoUnitario = select.options[select.selectedIndex].dataset.preco;
+            document.getElementById('precoUnitarioItem').value = precoUnitario;
+        }
+
+        function adicionarItemPedido(event) {
+            event.preventDefault();
+            let itensPedidos = JSON.parse(localStorage.getItem('itens_pedidos')) || [];
+            let novoItemPedido = {
+                idPedido: document.getElementById('pedidoItem').value,
+                idProduto: document.getElementById('produtoItem').value,
+                quantidade: parseInt(document.getElementById('quantidadeItem').value, 10),
+                precoUnitario: parseFloat(document.getElementById('precoUnitarioItem').value)
+            };
+            itensPedidos.push(novoItemPedido);
+            localStorage.setItem('itens_pedidos', JSON.stringify(itensPedidos));
+            atualizarTabelaItensPedidos();
+            event.target.reset();
+        }
+
+        function atualizarTabelaItensPedidos() {
+            let itensPedidos = JSON.parse(localStorage.getItem('itens_pedidos')) || [];
+            let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+            let tbody = document.querySelector('#tabelaItensPedidos tbody');
+            tbody.innerHTML = '';
+            itensPedidos.forEach(item => {
+                let produto = produtos.find(p => p.id === item.idProduto) || {};
+                let row = `<tr><td>${item.idPedido}</td><td>${item.idProduto}</td><td>${item.quantidade}</td><td>${item.precoUnitario.toFixed(2)}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function gerarBackup() {
+            let dadosBackup = {
+                clientes: JSON.parse(localStorage.getItem('clientes')) || [],
+                produtos: JSON.parse(localStorage.getItem('produtos')) || [],
+                pedidos: JSON.parse(localStorage.getItem('pedidos')) || [],
+                itens_pedidos: JSON.parse(localStorage.getItem('itens_pedidos')) || []
+            };
+            let blob = new Blob([JSON.stringify(dadosBackup, null, 2)], { type: 'application/json' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'backup.json';
+            link.click();
+        }
+
+        function restaurarBackup(event) {
+            let file = event.target.files[0];
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let dadosBackup = JSON.parse(e.target.result);
+                localStorage.setItem('clientes', JSON.stringify(dadosBackup.clientes));
+                localStorage.setItem('produtos', JSON.stringify(dadosBackup.produtos));
+                localStorage.setItem('pedidos', JSON.stringify(dadosBackup.pedidos));
+                localStorage.setItem('itens_pedidos', JSON.stringify(dadosBackup.itens_pedidos));
+                carregarDados();
+            };
+            reader.readAsText(file);
+        }
+
+        function resetarLocalStorage() {
+            if (confirm('Tem certeza de que deseja resetar o LocalStorage?')) {
+                localStorage.clear();
+                carregarDados();
+            }
+        }
+
+        function visualizarDados() {
+            let dadosLocalStorage = {
+                clientes: JSON.parse(localStorage.getItem('clientes')) || [],
+                produtos: JSON.parse(localStorage.getItem('produtos')) || [],
+                pedidos: JSON.parse(localStorage.getItem('pedidos')) || [],
+                itens_pedidos: JSON.parse(localStorage.getItem('itens_pedidos')) || []
+            };
+            document.getElementById('dadosLocalStorage').textContent = JSON.stringify(dadosLocalStorage, null, 2);
+            exibirSecao('visualizar_dados');
+        }
+    </script>
+</body>
+</html>
